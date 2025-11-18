@@ -1,6 +1,6 @@
 #!/bin/bash
 # Main orchestration script for Btrfs Incremental Backups.
-# This script uses helper functions defined in btrfs_backup.sh to create
+# This script uses helper functions to create
 # and send Btrfs snapshots to a backup destination.
 #
 # Must be run as root.
@@ -9,7 +9,7 @@
 #   ./btrfs_backup_main.sh [-s|send] [-h|--help]
 #
 # Arguments:
-#   -s|send: Enables a re-send and verification mode for the latest local snapshots.
+#   -s|--send: Enables a re-send and verification mode for the latest local snapshots.
 #       When this flag is provided, the script does NOT create new snapshots.
 #       Instead, for each subvolume, it finds the latest local snapshot and checks
 #       if it exists and is complete on the backup destination. If the snapshot
@@ -30,11 +30,11 @@ set -euo pipefail
 SUBVOLUMES_TO_BACKUP=(
 	"/"
 	"/home"
-	"/home/stoflom/Pictures/latest"
+	"/home/<user>/Pictures/latest"
 )
 
 # Backup Destination Mount Point and Subvolume
-BACKUP_MOUNT="/run/media/stoflom/BlackArmor"
+BACKUP_MOUNT="/run/media/<user>/BlackArmor"
 #BACKUP_MOUNT="/mnt/BlackArmor"
 #BACKUP_DEST="$BACKUP_MOUNT/fedora_snapshots"
 BACKUP_DEST="$BACKUP_MOUNT/fedora2_snapshots"
