@@ -19,7 +19,6 @@
 # Exit on error, treat unset variables as errors, and propagate exit status in pipelines.
 set -euo pipefail
 
-
 # --- Configuration ---
 
 # SUBVOLUMES_TO_BACKUP: Array of Btrfs subvolumes to back up.
@@ -39,9 +38,7 @@ BACKUP_MOUNT="/run/media/<user>/BlackArmor"
 #BACKUP_DEST="$BACKUP_MOUNT/fedora_snapshots"
 BACKUP_DEST="$BACKUP_MOUNT/fedora2_snapshots"
 
-
 SEND_RECEIVE=false
-
 
 # Btrfs Backup Function Library
 
@@ -106,7 +103,7 @@ send_snapshot() {
 
 # --- Usage function ---
 usage() {
-    cat <<EOF
+	cat <<EOF
 Usage: $(basename "$0") [-s|send] [-h|--help]
 
 Main orchestration script for Btrfs Incremental Backups.
@@ -123,42 +120,40 @@ Arguments:
 EOF
 }
 
-
-
 # --- Argument Parsing ---
 while getopts ":sh-:" opt; do
-  case "$opt" in
-    s)
-      SEND_RECEIVE=true
-      echo "Re-send/Receive mode enabled."
-      ;;
-    h)
-      usage
-      exit 0
-      ;;
-    -) # Handle long options
-      case "$OPTARG" in
-	help)
-        usage
-        exit 0
-	;;
-      send)
-	SEND_RECEIVE=true
-	echo "Re-send/Receive mode enabled."
-	;;
-      *)
-      	echo "Invalid option: --$OPTARG" >&2
-	usage >&2
-      	exit 2
-      	;;
-      esac
-      ;;
-    \?)	# This case handles any short option not in the getopts string (e.g., -k, -x)
-      echo "Invalid option: -$OPTARG" >&2
-      usage >&2
-      exit 1
-      ;;
-  esac
+	case "$opt" in
+	s)
+		SEND_RECEIVE=true
+		echo "Re-send/Receive mode enabled."
+		;;
+	h)
+		usage
+		exit 0
+		;;
+	-) # Handle long options
+		case "$OPTARG" in
+		help)
+			usage
+			exit 0
+			;;
+		send)
+			SEND_RECEIVE=true
+			echo "Re-send/Receive mode enabled."
+			;;
+		*)
+			echo "Invalid option: --$OPTARG" >&2
+			usage >&2
+			exit 2
+			;;
+		esac
+		;;
+	\?) # This case handles any short option not in the getopts string (e.g., -k, -x)
+		echo "Invalid option: -$OPTARG" >&2
+		usage >&2
+		exit 1
+		;;
+	esac
 done
 
 # --- Main Execution ---
@@ -187,8 +182,6 @@ for SOURCE_SUBVOL in "${SUBVOLUMES_TO_BACKUP[@]}"; do
 		SNAP_NAME=$(basename "$SOURCE_SUBVOL")
 	fi
 
-
-
 	# Ensure the snapshot directory exists
 	mkdir -p "$SNAP_DIR"
 
@@ -203,7 +196,6 @@ for SOURCE_SUBVOL in "${SUBVOLUMES_TO_BACKUP[@]}"; do
 	if [ -n "$LATEST_SNAPSHOT" ]; then
 		LAST_SNAP_PATH="$LATEST_SNAPSHOT"
 	fi
-
 
 	# If the last snapshot doesn't exist on disk, clear the variable to force a full backup.
 	if [ -n "$LAST_SNAP_PATH" ] && [ ! -d "$LAST_SNAP_PATH" ]; then
@@ -251,12 +243,12 @@ for SOURCE_SUBVOL in "${SUBVOLUMES_TO_BACKUP[@]}"; do
 		if [ "$NEEDS_RESEND" = true ]; then
 			# Find the parent of the snapshot we are trying to send.
 			PARENT_OF_SNAPSHOT_TO_SEND=$(find "$SNAP_DIR" -maxdepth 1 -type d -name "${SNAP_NAME}_*" | sort | grep -B 1 "$SNAPSHOT_TO_SEND" | head -n 1)
-			
+
 			# Ensure the found parent is not the same as the snapshot itself (which happens if it's the only one).
 			if [ "$PARENT_OF_SNAPSHOT_TO_SEND" = "$SNAPSHOT_TO_SEND" ]; then
 				PARENT_OF_SNAPSHOT_TO_SEND=""
 			fi
-			
+
 			# Call the send function with the existing snapshot and its parent
 			send_snapshot "$SNAPSHOT_TO_SEND" "$BACKUP_DEST" "$PARENT_OF_SNAPSHOT_TO_SEND"
 		fi
@@ -264,14 +256,14 @@ for SOURCE_SUBVOL in "${SUBVOLUMES_TO_BACKUP[@]}"; do
 		# --- Normal backup mode: take snapshot, then send it ---
 		NEW_SNAP_NAME="${SNAP_NAME}_$(date +%Y%m%d%H%M%S)"
 		NEW_SNAP_PATH="${SNAP_DIR}/${NEW_SNAP_NAME}"
-		
+
 		# 1. Take the new snapshot
 		if take_snapshot "$SOURCE_SUBVOL" "$NEW_SNAP_PATH"; then
 			# 2. Send the newly created snapshot
 			# The parent for the send is the one we found earlier ($LAST_SNAP_PATH)
 			send_snapshot "$NEW_SNAP_PATH" "$BACKUP_DEST" "$LAST_SNAP_PATH"
 		fi
-	fi	
+	fi
 
 done
 
