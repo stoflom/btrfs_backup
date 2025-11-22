@@ -24,7 +24,7 @@ set -euo pipefail
 # SUBVOLUMES_TO_BACKUP: Array of Btrfs subvolumes to back up.
 # Define the subvolumes to back up in an array. The script will derive
 # the snapshot directory and name prefix from these paths. The directory
-# for snapshots will be created under each source subvolume root (e.g., /home/snapshots)
+# for snapshots will be created under each source subvolume root (e.g., /home/.snapshots)
 # and the unique snapshot name will be the basename of the subvolume path + timestamp.
 SUBVOLUMES_TO_BACKUP=(
 	"/"
@@ -174,11 +174,11 @@ for SOURCE_SUBVOL in "${SUBVOLUMES_TO_BACKUP[@]}"; do
 	# --- Derive snapshot configuration from source subvolume ---
 	if [ "$SOURCE_SUBVOL" = "/" ]; then
 		# Special case for the root subvolume
-		SNAP_DIR="/snapshots"
+		SNAP_DIR="/.snapshots"
 		SNAP_NAME="root"
 	else
 		# For all other subvolumes
-		SNAP_DIR="${SOURCE_SUBVOL}/snapshots"
+		SNAP_DIR="${SOURCE_SUBVOL}/.snapshots"
 		SNAP_NAME=$(basename "$SOURCE_SUBVOL")
 	fi
 

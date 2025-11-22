@@ -45,12 +45,12 @@ BACKUP_DEST="$BACKUP_MOUNT/fedora2_snapshots"
 
 1.  **Create Snapshot Directories**
 
-    Ensure the Btrfs subvolumes where snapshots will be stored exist. The script is configured to store snapshots in directories like `/snapshots` and `/home/snapshots`. You must create these subvolume directories before running the script.
+    Ensure the Btrfs subvolumes where snapshots will be stored exist. The script is configured to store snapshots in directories like `/.snapshots` and `/home/.snapshots`. You must create these subvolume directories before running the script.
 
     ```bash
     # Example for root and home subvolumes
-    sudo btrfs subvolume create /snapshots
-    sudo btrfs subvolume create /home/snapshots
+    sudo btrfs subvolume create /.snapshots
+    sudo btrfs subvolume create /home/.snapshots
     ```
 
 2.  **Run the Script**
