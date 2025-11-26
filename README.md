@@ -4,7 +4,7 @@
 
 #### `btrfs_backup.sh`
 
-A script to take Btrfs snapshots of `/`, `/home`, and other specified subvolumes and send them incrementally to a backup disk.
+A script to take Btrfs snapshots of `/`, `/home`, and other specified subvolumes and send them incrementally to a mounted backup disk.
 
 #### `cleanup_snapshots.sh`
 
@@ -54,6 +54,7 @@ SUBVOLUMES_TO_BACKUP=(
 
 # The mount point of the backup disk.
 BACKUP_MOUNT="/run/media/<user>/BlackArmor"
+# NOTE: the backup disk must also be formatted with a btrfs filesystem.
 
 # The Btrfs subvolume on the backup disk where snapshots will be sent/stored.
 BACKUP_DEST="$BACKUP_MOUNT/fedora2_snapshots"
