@@ -10,11 +10,11 @@ KEEP=3
 SUBVOLUMES_TO_CLEAN=(
     "/"
     "/home"
-    "/home/<user>/Pictures/latest"
+    "/home/stoflom/Pictures/latest"
 )
 
 # Backup destination where snapshots are stored (full path)
-BACKUP_DEST="/run/media/<user>/BlackArmor/fedora2_snapshots"
+BACKUP_DEST="/run/media/stoflom/BlackArmor/fedora2_snapshots"
 
 # Simple check
 if [ "$EUID" -ne 0 ]; then
@@ -101,5 +101,9 @@ for SOURCE_SUBVOL in "${SUBVOLUMES_TO_CLEAN[@]}"; do
 done
 
 echo "=== cleanup complete: $(date) ==="
+
+# Log script execution to syslog
+logger -t btrfs_snapshot_cleanup_script "Snapshot cleanup script executed on $(date)"
+
 exit 0
 ```// filepath: /home/stoflom/Workspace/btrfs_backup/cleanup_snapshots.sh
