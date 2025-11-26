@@ -10,11 +10,11 @@ KEEP=3
 SUBVOLUMES_TO_CLEAN=(
     "/"
     "/home"
-    "/home/stoflom/Pictures/latest"
+    "/home/<user>/Pictures/latest"
 )
 
 # Backup destination where snapshots are stored (full path)
-BACKUP_DEST="/run/media/stoflom/BlackArmor/fedora2_snapshots"
+BACKUP_DEST="/run/media/<user>/BlackArmor/fedora2_snapshots"
 
 # Simple check
 if [ "$EUID" -ne 0 ]; then
