@@ -2,6 +2,11 @@
 
 ### System & Backup
 
+#### `btrfs_snapshot.sh`
+
+A script to take Btrfs snapshots of specified subvolumes. The snapshots are  placed in .snapshots under the specified subvolumes.
+
+
 #### `btrfs_backup.sh`
 
 A script to take Btrfs snapshots of `/`, `/home`, and other specified subvolumes and send them incrementally to a mounted backup disk.
@@ -18,10 +23,15 @@ These scripts are still under testing. While they are not intended to delete or 
 
 ## Usage
 
+#### `btrfs_snapshot.sh`
+```bash
+sudo -i ./btrfs_snapshot.sh
+```
+
 ### Backup Script
 
 ```bash
-sudo ./btrfs_backup.sh [-s|--send] [-h|--help]
+sudo -i ./btrfs_backup.sh [-s|--send] [-h|--help]
 ```
 
 Arguments:
@@ -31,7 +41,7 @@ Arguments:
 ### Cleanup Script
 
 ```bash
-sudo ./cleanup_snapshots.sh
+sudo -i ./cleanup_snapshots.sh
 ```
 
 This script will delete older snapshots and keep only the latest N snapshots (default: 3) for each configured subvolume, both locally and on the backup disk.
@@ -103,7 +113,7 @@ KEEP=3
 
 ## Logging
 
-Both scripts log important actions and completion status to syslog using the `logger` command. You can review logs with:
+These scripts log important actions and completion status to syslog using the `logger` command. You can review logs with:
 
 ```bash
 journalctl -t btrfs_backup_script
