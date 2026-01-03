@@ -4,7 +4,9 @@ set -euo pipefail
 
 # --- Configuration ---
 SUBVOLUMES_TO_SNAPSHOT=(
-	"/run/media/<user>/T7Shield"
+	"/home/<user>/Pictures/OtherPictures"
+	"/home/<user>/Pictures/SourcePictures"
+	"/home/<user>/Pictures/Trees"
 )
 
 # take_snapshot() function
