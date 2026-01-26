@@ -2,12 +2,38 @@
 
 set -euo pipefail
 
+
 # --- Configuration ---
 SUBVOLUMES_TO_SNAPSHOT=(
 	"/home/<user>/Pictures/OtherPictures"
 	"/home/<user>/Pictures/SourcePictures"
 	"/home/<user>/Pictures/Trees"
 )
+
+
+# --- Help Function ---
+show_help() {
+	echo "Usage: $0 [-h|--help]"
+	echo ""
+	echo "This script creates read-only Btrfs snapshots for configured subvolumes."
+	echo ""
+	echo "The following subvolumes will be snapshot:"
+	for SOURCE_SUBVOL in "${SUBVOLUMES_TO_SNAPSHOT[@]}"; do
+		if [ "$SOURCE_SUBVOL" = "/" ]; then
+			SNAP_DIR="/.snapshots"
+			SNAP_NAME="root"
+		else
+			SNAP_DIR="${SOURCE_SUBVOL}/.snapshots"
+			SNAP_NAME=$(basename "$SOURCE_SUBVOL")
+		fi
+		NEW_SNAP_NAME="${SNAP_NAME}_$(date +%Y%m%d%H%M%S)"
+		NEW_SNAP_PATH="${SNAP_DIR}/${NEW_SNAP_NAME}"
+		echo "  Source: $SOURCE_SUBVOL"
+		echo "  Snapshot will be created at: $NEW_SNAP_PATH"
+		echo ""
+	done
+	echo "No changes will be made when run with --help."
+}
 
 # take_snapshot() function
 # Creates a local read-only Btrfs snapshot.
@@ -33,8 +59,13 @@ take_snapshot() {
 	fi
 }
 
-
 # --- Main Execution ---
+
+# Check for help argument
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+	show_help
+	exit 0
+fi
 
 echo "--- btrfs_snapshot script execution Started: $(date) ---"
 
@@ -61,8 +92,8 @@ for SOURCE_SUBVOL in "${SUBVOLUMES_TO_SNAPSHOT[@]}"; do
 	NEW_SNAP_NAME="${SNAP_NAME}_$(date +%Y%m%d%H%M%S)"
 	NEW_SNAP_PATH="${SNAP_DIR}/${NEW_SNAP_NAME}"
 	# Take the new snapshot
-	take_snapshot "$SOURCE_SUBVOL" "$NEW_SNAP_PATH"; 
-	
+	take_snapshot "$SOURCE_SUBVOL" "$NEW_SNAP_PATH"
+
 done
 
 echo "--- Script Execution Complete: $(date) ---"
