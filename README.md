@@ -28,6 +28,11 @@ These scripts are still under testing. While they are not intended to delete or 
 sudo -i ./btrfs_snapshot.sh
 ```
 
+To print the configured actions without doing anything
+```bash
+btrfs_snapshot.sh -h 
+```
+
 ### Backup Script
 
 ```bash
