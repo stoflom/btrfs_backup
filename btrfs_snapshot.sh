@@ -25,7 +25,7 @@ show_help() {
 Usage: $(basename "$0") [-h|--help]
 
 This script creates read-only Btrfs snapshots for configured subvolumes.
-The following subvolumes are currently configured:
+See config.sh; the following subvolumes are currently configured:
 EOF
     for SOURCE_SUBVOL in "${SUBVOLUMES[@]}"; do
         get_snap_info "$SOURCE_SUBVOL"

@@ -24,8 +24,9 @@ show_help() {
     cat <<EOF
 Usage: $(basename "$0") [-h|--help]
 
-This script cleans up old Btrfs snapshots both locally and on the backup destination.
-It retains a configured number of snapshots (KEEP) for each subvolume.
+This script cleans up old Btrfs snapshots (as configured in config.sh) 
+both locally and on the backup destination.
+It retains $KEEP (see config.sh) snapshots for each subvolume.
 EOF
 }
 

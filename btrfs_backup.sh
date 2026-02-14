@@ -29,7 +29,9 @@ usage() {
     cat <<EOF
 Usage: $(basename "$0") [-s|--send] [-f|--full] [-h|--help]
 
-Main orchestration script for Btrfs Incremental Backups.
+Main orchestration script for Btrfs Incremental Backups. See configuration
+in config.sh.
+
 Must be run as root.
 
 Arguments:
@@ -124,7 +126,7 @@ for SOURCE_SUBVOL in "${SUBVOLUMES[@]}"; do
         PARENT_OF_SNAPSHOT=$(find "$SNAP_DIR" -maxdepth 1 -type d -name "${SNAP_NAME}_[0-9]*" | sort | grep -B 1 "$SNAPSHOT_TO_SEND" | head -n 1)
         [ "$PARENT_OF_SNAPSHOT" = "$SNAPSHOT_TO_SEND" ] && PARENT_OF_SNAPSHOT=""
 
-        send_snapshot "$SNAPSHOT_TO_SEND" "$BACKUP_DEST" "$PARENT_OF_SNAPSHOT" "$FORCE_FULL"
+        send_snapshot "$SNAPSHOT_TO_SEND" "$BACKUP_DEST" "$PARENT_OF_SNAPSHOT" "$FORCE_FULL" || true
     else
         # Normal backup mode
         NEW_SNAP_NAME="${SNAP_NAME}_$(date +%Y%m%d%H%M%S)"
@@ -132,7 +134,7 @@ for SOURCE_SUBVOL in "${SUBVOLUMES[@]}"; do
 
         if take_snapshot "$SOURCE_SUBVOL" "$NEW_SNAP_PATH"; then
             # Use LATEST_SNAPSHOT (found before taking the new one) as parent
-            send_snapshot "$NEW_SNAP_PATH" "$BACKUP_DEST" "$LATEST_SNAPSHOT" "$FORCE_FULL"
+            send_snapshot "$NEW_SNAP_PATH" "$BACKUP_DEST" "$LATEST_SNAPSHOT" "$FORCE_FULL" || true
         fi
     fi
 done

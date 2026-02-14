@@ -49,7 +49,9 @@ send_snapshot() {
         if [ ! -d "$PARENT_SNAPSHOT" ]; then
             echo "WARNING: Parent snapshot '$PARENT_SNAPSHOT' not found on source. Forcing a full send."
         elif [ ! -d "$BACKUP_DEST/$PARENT_NAME" ]; then
-            echo "WARNING: Parent snapshot '$PARENT_NAME' not found on backup destination. Forcing a full send."
+            echo "ERROR: Parent snapshot '$PARENT_NAME' exists on source but NOT on backup destination."
+            echo "Use -s to sync the parent or -f for a full backup."
+            return 1
         else
             USE_PARENT="$PARENT_SNAPSHOT"
         fi
