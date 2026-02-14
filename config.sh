@@ -8,15 +8,15 @@
 SUBVOLUMES=(
     "/"
     "/home"
-    # "/home/stoflom/Pictures/latest"
+    # "/home/<user>/Pictures/latest"
 )
 
 # Backup Destination Mount Point
-BACKUP_MOUNT="/run/media/stoflom/BlackArmor"
+BACKUP_MOUNT="/run/media/<user>/<drive>"
 
 # Backup Destination Subvolume/Directory
 # This is where the snapshots will be sent on the backup media.
-BACKUP_DEST="$BACKUP_MOUNT/fedora2_snapshots"
+BACKUP_DEST="$BACKUP_MOUNT/fedora_snapshots"
 
 # Number of latest snapshots to keep locally and on the backup destination.
 KEEP=5
