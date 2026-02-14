@@ -1,109 +1,103 @@
 #!/bin/bash
 # Cleanup old Btrfs snapshots locally and on backup destination.
-# Run as root.
+
 set -euo pipefail
 
-# Number of latest snapshots to keep per subvolume
-KEEP=3
-
-# Subvolumes to clean snapshots for (use same list as your backup script)
-SUBVOLUMES_TO_CLEAN=(
-    "/"
-    "/home"
-    "/home/<user>/Pictures/latest"
-)
-
-# Backup destination where snapshots are stored (full path)
-BACKUP_DEST="/run/media/<user>/BlackArmor/fedora2_snapshots"
-
-# Simple check
-if [ "$EUID" -ne 0 ]; then
-    echo "ERROR: This script must be run as root."
+# --- Source configuration and common functions ---
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+if [ -f "$SCRIPT_DIR/config.sh" ]; then
+    source "$SCRIPT_DIR/config.sh"
+else
+    echo "ERROR: config.sh not found." >&2
     exit 1
 fi
 
-if [ ! -d "$BACKUP_DEST" ]; then
-    echo "ERROR: Backup destination $BACKUP_DEST does not exist or is not mounted."
+if [ -f "$SCRIPT_DIR/common.sh" ]; then
+    source "$SCRIPT_DIR/common.sh"
+else
+    echo "ERROR: common.sh not found." >&2
+    exit 1
+fi
+
+# --- Help Function ---
+show_help() {
+    cat <<EOF
+Usage: $(basename "$0") [-h|--help]
+
+This script cleans up old Btrfs snapshots both locally and on the backup destination.
+It retains a configured number of snapshots (KEEP) for each subvolume.
+EOF
+}
+
+# --- Argument Parsing ---
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -h|--help)
+            show_help
+            exit 0
+            ;;
+        *)
+            echo "Invalid option: $1" >&2
+            show_help >&2
+            exit 1
+            ;;
+    esac
+done
+
+# Simple check
+if [ "$EUID" -ne 0 ]; then
+    echo "ERROR: This script must be run as root." >&2
     exit 1
 fi
 
 clean_snapshots_in_dir() {
-    local SNAP_DIR=$1
-    local SNAP_NAME=$2
+    local TARGET_DIR=$1
+    local SNAP_NAME_PREFIX=$2
     local KEEP_COUNT=$3
 
-    # Ensure directory exists
-    if [ ! -d "$SNAP_DIR" ]; then
-        echo "INFO: Snapshot directory $SNAP_DIR does not exist. Skipping."
+    if [ ! -d "$TARGET_DIR" ]; then
+        echo "INFO: Directory $TARGET_DIR does not exist. Skipping."
         return 0
     fi
 
     # Gather snapshots sorted (old -> new)
-    mapfile -t snaps < <(find "$SNAP_DIR" -maxdepth 1 -mindepth 1 -type d -name "${SNAP_NAME}_*" | sort)
+    mapfile -t snaps < <(find "$TARGET_DIR" -maxdepth 1 -mindepth 1 -type d -name "${SNAP_NAME_PREFIX}_[0-9]*" | sort)
 
     local total=${#snaps[@]}
     if [ "$total" -le "$KEEP_COUNT" ]; then
-        echo "INFO: $SNAP_DIR: $total snapshots found; keeping all (KEEP=${KEEP_COUNT})."
+        echo "INFO: $TARGET_DIR: $total snapshots found; keeping all (KEEP=${KEEP_COUNT})."
         return 0
     fi
 
     local to_delete_count=$((total - KEEP_COUNT))
-    echo "INFO: $SNAP_DIR: $total snapshots found; deleting $to_delete_count oldest."
+    echo "INFO: $TARGET_DIR: $total snapshots found; deleting $to_delete_count oldest."
 
     for ((i=0; i<to_delete_count; i++)); do
         snap="${snaps[i]}"
-        echo "Deleting local snapshot: $snap"
-        if ! btrfs subvolume delete "$snap"; then
-            echo "WARNING: Failed to delete local snapshot $snap. Continue with next."
-        fi
-    done
-}
-
-clean_snapshots_in_backup() {
-    local SNAP_NAME=$1
-    local KEEP_COUNT=$2
-
-    # Snapshots stored directly under BACKUP_DEST with same names produced by backup script
-    mapfile -t snaps < <(find "$BACKUP_DEST" -maxdepth 1 -mindepth 1 -type d -name "${SNAP_NAME}_*" | sort)
-
-    local total=${#snaps[@]}
-    if [ "$total" -le "$KEEP_COUNT" ]; then
-        echo "INFO: $BACKUP_DEST: $total snapshots for ${SNAP_NAME} found; keeping all (KEEP=${KEEP_COUNT})."
-        return 0
-    fi
-
-    local to_delete_count=$((total - KEEP_COUNT))
-    echo "INFO: $BACKUP_DEST: $total snapshots for ${SNAP_NAME} found; deleting $to_delete_count oldest."
-
-    for ((i=0; i<to_delete_count; i++)); do
-        snap="${snaps[i]}"
-        echo "Deleting backup snapshot: $snap"
-        if ! btrfs subvolume delete "$snap"; then
-            echo "WARNING: Failed to delete backup snapshot $snap. Continue with next."
+        echo "Deleting snapshot: $snap"
+        if ! btrfs subvolume delete "$snap" > /dev/null; then
+            echo "WARNING: Failed to delete snapshot $snap." >&2
         fi
     done
 }
 
 echo "=== btrfs snapshot cleanup started: $(date) ==="
 
-for SOURCE_SUBVOL in "${SUBVOLUMES_TO_CLEAN[@]}"; do
-    if [ "$SOURCE_SUBVOL" = "/" ]; then
-        SNAP_DIR="/.snapshots"
-        SNAP_NAME="root"
-    else
-        SNAP_DIR="${SOURCE_SUBVOL}/.snapshots"
-        SNAP_NAME=$(basename "$SOURCE_SUBVOL")
-    fi
-
+for SOURCE_SUBVOL in "${SUBVOLUMES[@]}"; do
+    get_snap_info "$SOURCE_SUBVOL"
+    
     echo "Processing $SOURCE_SUBVOL -> snapshot name prefix: $SNAP_NAME"
+    
+    # Clean local snapshots
     clean_snapshots_in_dir "$SNAP_DIR" "$SNAP_NAME" "$KEEP"
-    clean_snapshots_in_backup "$SNAP_NAME" "$KEEP"
+    
+    # Clean backup snapshots
+    if [ -d "$BACKUP_DEST" ]; then
+        clean_snapshots_in_dir "$BACKUP_DEST" "$SNAP_NAME" "$KEEP"
+    else
+        echo "WARNING: Backup destination $BACKUP_DEST not available for cleanup." >&2
+    fi
 done
 
 echo "=== cleanup complete: $(date) ==="
-
-# Log script execution to syslog
 logger -t btrfs_snapshot_cleanup_script "Snapshot cleanup script executed on $(date)"
-
-exit 0
-```// filepath: /home/stoflom/Workspace/btrfs_backup/cleanup_snapshots.sh

@@ -1,101 +1,73 @@
 #!/bin/bash
+# Script to take read-only Btrfs snapshots for configured subvolumes.
 
 set -euo pipefail
 
+# --- Source configuration and common functions ---
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+if [ -f "$SCRIPT_DIR/config.sh" ]; then
+    source "$SCRIPT_DIR/config.sh"
+else
+    echo "ERROR: config.sh not found." >&2
+    exit 1
+fi
 
-# --- Configuration ---
-SUBVOLUMES_TO_SNAPSHOT=(
-	"/home/<user>/Pictures/OtherPictures"
-	"/home/<user>/Pictures/SourcePictures"
-	"/home/<user>/Pictures/Trees"
-)
-
+if [ -f "$SCRIPT_DIR/common.sh" ]; then
+    source "$SCRIPT_DIR/common.sh"
+else
+    echo "ERROR: common.sh not found." >&2
+    exit 1
+fi
 
 # --- Help Function ---
 show_help() {
-	echo "Usage: $0 [-h|--help]"
-	echo ""
-	echo "This script creates read-only Btrfs snapshots for configured subvolumes."
-	echo ""
-	echo "The following subvolumes will be snapshot:"
-	for SOURCE_SUBVOL in "${SUBVOLUMES_TO_SNAPSHOT[@]}"; do
-		if [ "$SOURCE_SUBVOL" = "/" ]; then
-			SNAP_DIR="/.snapshots"
-			SNAP_NAME="root"
-		else
-			SNAP_DIR="${SOURCE_SUBVOL}/.snapshots"
-			SNAP_NAME=$(basename "$SOURCE_SUBVOL")
-		fi
-		NEW_SNAP_NAME="${SNAP_NAME}_$(date +%Y%m%d%H%M%S)"
-		NEW_SNAP_PATH="${SNAP_DIR}/${NEW_SNAP_NAME}"
-		echo "  Source: $SOURCE_SUBVOL"
-		echo "  Snapshot will be created at: $NEW_SNAP_PATH"
-		echo ""
-	done
-	echo "No changes will be made when run with --help."
-}
+    cat <<EOF
+Usage: $(basename "$0") [-h|--help]
 
-# take_snapshot() function
-# Creates a local read-only Btrfs snapshot.
-#
-# On success, it returns exit code 0.
-# On failure, it returns a non-zero exit code.
-#
-# @param $1 SOURCE_SUBVOL   The source subvolume to snapshot (e.g., "/home").
-# @param $2 NEW_SNAP_PATH   The full, absolute path for the new snapshot to be created.
-take_snapshot() {
-	local SOURCE_SUBVOL=$1
-	local NEW_SNAP_PATH=$2
-
-	echo "--- Creating read-only snapshot for '$SOURCE_SUBVOL' ---"
-	echo "Snapshot path: $NEW_SNAP_PATH"
-
-	if btrfs subvolume snapshot -r "$SOURCE_SUBVOL" "$NEW_SNAP_PATH"; then
-		echo "SUCCESS: Snapshot created at $NEW_SNAP_PATH."
-		return 0
-	else
-		echo "ERROR: Failed to create snapshot for '$SOURCE_SUBVOL' at '$NEW_SNAP_PATH'."
-		return 1
-	fi
+This script creates read-only Btrfs snapshots for configured subvolumes.
+The following subvolumes are currently configured:
+EOF
+    for SOURCE_SUBVOL in "${SUBVOLUMES[@]}"; do
+        get_snap_info "$SOURCE_SUBVOL"
+        echo "  Source: $SOURCE_SUBVOL -> $SNAP_DIR/${SNAP_NAME}_<timestamp>"
+    done
 }
 
 # --- Main Execution ---
 
-# Check for help argument
-if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
-	show_help
-	exit 0
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -h|--help)
+            show_help
+            exit 0
+            ;;
+        *)
+            echo "Invalid option: $1" >&2
+            show_help >&2
+            exit 1
+            ;;
+    esac
+done
+
+# Simple check
+if [ "$EUID" -ne 0 ]; then
+    echo "ERROR: This script must be run as root." >&2
+    exit 1
 fi
 
 echo "--- btrfs_snapshot script execution Started: $(date) ---"
 
-# Loop through the array and snapshot each subvolume
-for SOURCE_SUBVOL in "${SUBVOLUMES_TO_SNAPSHOT[@]}"; do
-	echo -e "======================================================"
-	echo "Processing source subvolume: $SOURCE_SUBVOL"
+for SOURCE_SUBVOL in "${SUBVOLUMES[@]}"; do
+    echo "======================================================"
+    echo "Processing source subvolume: $SOURCE_SUBVOL"
 
-	# --- Derive snapshot configuration from source subvolume ---
-	if [ "$SOURCE_SUBVOL" = "/" ]; then
-		# Special case for the root subvolume
-		SNAP_DIR="/.snapshots"
-		SNAP_NAME="root"
-	else
-		# For all other subvolumes
-		SNAP_DIR="${SOURCE_SUBVOL}/.snapshots"
-		SNAP_NAME=$(basename "$SOURCE_SUBVOL")
-	fi
+    get_snap_info "$SOURCE_SUBVOL"
+    mkdir -p "$SNAP_DIR"
 
-	# Ensure the snapshot directory exists
-	mkdir -p "$SNAP_DIR"
-
-	# Create new snapshot
-	NEW_SNAP_NAME="${SNAP_NAME}_$(date +%Y%m%d%H%M%S)"
-	NEW_SNAP_PATH="${SNAP_DIR}/${NEW_SNAP_NAME}"
-	# Take the new snapshot
-	take_snapshot "$SOURCE_SUBVOL" "$NEW_SNAP_PATH"
-
+    NEW_SNAP_NAME="${SNAP_NAME}_$(date +%Y%m%d%H%M%S)"
+    NEW_SNAP_PATH="${SNAP_DIR}/${NEW_SNAP_NAME}"
+    
+    take_snapshot "$SOURCE_SUBVOL" "$NEW_SNAP_PATH"
 done
 
 echo "--- Script Execution Complete: $(date) ---"
-
-exit 0

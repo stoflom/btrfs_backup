@@ -1,126 +1,99 @@
-# Bash Utilities
+# Btrfs Backup & Snapshot Utilities
 
-### System & Backup
+A collection of Bash scripts for automated Btrfs snapshot management and incremental backups to external drives.
 
-#### `btrfs_snapshot.sh`
+## Key Features
 
-A script to take Btrfs snapshots of specified subvolumes. The snapshots are  placed in .snapshots under the specified subvolumes.
-
-
-#### `btrfs_backup.sh`
-
-A script to take Btrfs snapshots of `/`, `/home`, and other specified subvolumes and send them incrementally to a mounted backup disk.
-
-#### `cleanup_snapshots.sh`
-
-A script to clean up old Btrfs snapshots from both local `.snapshots` directories and the backup destination. It keeps only a specified number of the latest snapshots for each subvolume.
-
-### ⚠️ Disclaimer
-
-These scripts are still under testing. While they are not intended to delete or corrupt data, it is crucial to **verify that your snapshots have been successfully copied to the backup media**. Use at your own risk.
+- **Automated Snapshots**: Easily create read-only snapshots of multiple subvolumes.
+- **Incremental Backups**: Send snapshots to a backup destination using `btrfs send/receive`.
+- **Intelligent Cleanup**: Retain a configurable number of the latest snapshots both locally and on the backup destination.
+- **Verification Mode**: Re-send missing or incomplete snapshots to ensure backup integrity.
+- **System Logging**: All critical operations are logged to syslog for easy monitoring.
 
 ---
 
-## Usage
+## 🛠️ Prerequisites
 
-#### `btrfs_snapshot.sh`
-```bash
-sudo -i ./btrfs_snapshot.sh
-```
-
-To print the configured actions without doing anything
-```bash
-btrfs_snapshot.sh -h 
-```
-
-### Backup Script
-
-```bash
-sudo -i ./btrfs_backup.sh [-s|--send] [-h|--help]
-```
-
-Arguments:
-*   `-s`, `--send`: Enables re-send and verification mode for the latest local snapshots. The script does not create new snapshots in this mode. Instead, it finds the latest local snapshot for each subvolume and checks if it exists and is complete on the backup destination. If missing or incomplete, it will be (re-)sent.
-*   `-h`, `--help`: Display the help message and exit.
-
-### Cleanup Script
-
-```bash
-sudo -i ./cleanup_snapshots.sh
-```
-
-This script will delete older snapshots and keep only the latest N snapshots (default: 3) for each configured subvolume, both locally and on the backup disk.
+1.  **Btrfs Filesystem**: The source subvolumes and the backup destination must be on Btrfs.
+2.  **Snapshot Directories**: Each subvolume you wish to snapshot must have a `.snapshots` subvolume at its root.
+    
+    *Example for `/` and `/home`:*
+    ```bash
+    sudo btrfs subvolume create /.snapshots
+    sudo btrfs subvolume create /home/.snapshots
+    ```
 
 ---
 
 ## ⚙️ Configuration
 
-Before running the scripts, configure the subvolumes to be backed up and the backup destination. These settings are located at the top of the scripts.
+Settings are centralized in `config.sh`. This file must be configured before running the scripts.
 
-**Example configuration from `btrfs_backup.sh` and `cleanup_snapshots.sh`:**
+| Variable | Description |
+| :--- | :--- |
+| `SUBVOLUMES` | Array of source subvolumes to backup (e.g., `"/"`, `"/home"`). |
+| `BACKUP_MOUNT` | The mount point of your backup disk. |
+| `BACKUP_DEST` | The specific subvolume/directory on the backup disk for storage. |
+| `KEEP` | Number of latest snapshots to retain (default: 5). |
 
+**Example `config.sh`:**
 ```bash
-# Array of Btrfs subvolumes to back up/clean.
-SUBVOLUMES_TO_BACKUP=(
-    "/"
-    "/home"
-    "/home/<user>/Pictures/latest"
-)
-
-# The mount point of the backup disk.
-BACKUP_MOUNT="/run/media/<user>/BlackArmor"
-# NOTE: the backup disk must also be formatted with a btrfs filesystem.
-
-# The Btrfs subvolume on the backup disk where snapshots will be sent/stored.
-BACKUP_DEST="$BACKUP_MOUNT/fedora2_snapshots"
-
-# Number of latest snapshots to keep (for cleanup script)
-KEEP=3
+SUBVOLUMES=("/" "/home")
+BACKUP_MOUNT="/run/media/user/BackupDrive"
+BACKUP_DEST="$BACKUP_MOUNT/system_snapshots"
+KEEP=5
 ```
 
 ---
 
-## Initial Setup and Execution
+## 🚀 Usage
 
-1.  **Create Snapshot Directories**
+All scripts must be run as **root**.
 
-    Ensure the Btrfs subvolumes where snapshots will be stored exist. The scripts are configured to store snapshots in directories like `/.snapshots` and `/home/.snapshots`. You must create these subvolume directories before running the scripts.
+### 1. Snapshot and Backup (`btrfs_backup.sh`)
+This is the primary script. It creates new snapshots and sends them to the backup destination.
 
-    ```bash
-    # Example for root and home subvolumes
-    sudo btrfs subvolume create /.snapshots
-    sudo btrfs subvolume create /home/.snapshots
-    ```
+```bash
+sudo ./btrfs_backup.sh [OPTIONS]
+```
 
-2.  **Run the Backup Script**
+- **No Arguments**: Creates new local snapshots and performs incremental sends to the backup destination.
+- `-s, --send`: **Verification Mode**. Does not create new snapshots. Instead, it ensures the latest local snapshots are correctly transferred to the backup destination (useful for manual recovery or interrupted transfers).
+- `-f, --full`: **Force Full Send**. Forces a full send-receive of the snapshots, ignoring parent snapshots.
+- `-h, --help`: Display help message.
 
-    Execute the script with root privileges:
+### 2. Snapshot Only (`btrfs_snapshot.sh`)
+Creates local snapshots without performing a backup.
 
-    ```bash
-    sudo ./btrfs_backup.sh
-    ```
+```bash
+sudo ./btrfs_snapshot.sh
+```
 
-    To run in re-send and verification mode:
+### 3. Cleanup (`btrfs_snapshot_cleanup.sh`)
+Removes old snapshots based on the `KEEP` variable in `config.sh`. It cleans up both local `.snapshots` directories and the `BACKUP_DEST`.
 
-    ```bash
-    sudo ./btrfs_backup.sh --send
-    ```
-
-3.  **Run the Cleanup Script**
-
-    Execute the cleanup script to remove old snapshots:
-
-    ```bash
-    sudo ./cleanup_snapshots.sh
-    ```
+```bash
+sudo ./btrfs_snapshot_cleanup.sh
+```
 
 ---
 
-## Logging
+## 📝 Logging & Monitoring
 
-These scripts log important actions and completion status to syslog using the `logger` command. You can review logs with:
+The scripts use the `logger` command to record actions to the system log.
 
+**View Backup Logs:**
 ```bash
 journalctl -t btrfs_backup_script
+```
+
+**View Cleanup Logs:**
+```bash
 journalctl -t btrfs_snapshot_cleanup_script
 ```
+
+---
+
+## ⚠️ Disclaimer
+
+These scripts are provided as-is. While designed for safety, always verify your backups manually. Use at your own risk.
