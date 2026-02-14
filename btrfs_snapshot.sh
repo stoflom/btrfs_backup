@@ -67,7 +67,7 @@ for SOURCE_SUBVOL in "${SUBVOLUMES[@]}"; do
     NEW_SNAP_NAME="${SNAP_NAME}_$(date +%Y%m%d%H%M%S)"
     NEW_SNAP_PATH="${SNAP_DIR}/${NEW_SNAP_NAME}"
     
-    take_snapshot "$SOURCE_SUBVOL" "$NEW_SNAP_PATH"
+    take_snapshot "$SOURCE_SUBVOL" "$NEW_SNAP_PATH" || true
 done
 
 echo "--- Script Execution Complete: $(date) ---"

@@ -109,8 +109,8 @@ for SOURCE_SUBVOL in "${SUBVOLUMES[@]}"; do
         DEST_SNAP_PATH="$BACKUP_DEST/$SNAPSHOT_TO_SEND_NAME"
 
         # Check for completeness
-        check_snapshot_complete "$DEST_SNAP_PATH"
-        CHECK_STATUS=$?
+        CHECK_STATUS=0
+        check_snapshot_complete "$DEST_SNAP_PATH" || CHECK_STATUS=$?
 
         if [ $CHECK_STATUS -eq 0 ]; then
             echo "INFO: Snapshot '$DEST_SNAP_PATH' appears complete. Skipping."
@@ -124,7 +124,9 @@ for SOURCE_SUBVOL in "${SUBVOLUMES[@]}"; do
 
         # Find the parent of the snapshot we are trying to send
         PARENT_OF_SNAPSHOT=$(find "$SNAP_DIR" -maxdepth 1 -type d -name "${SNAP_NAME}_[0-9]*" | sort | grep -B 1 "$SNAPSHOT_TO_SEND" | head -n 1)
-        [ "$PARENT_OF_SNAPSHOT" = "$SNAPSHOT_TO_SEND" ] && PARENT_OF_SNAPSHOT=""
+        if [ "$PARENT_OF_SNAPSHOT" = "$SNAPSHOT_TO_SEND" ]; then
+            PARENT_OF_SNAPSHOT=""
+        fi
 
         send_snapshot "$SNAPSHOT_TO_SEND" "$BACKUP_DEST" "$PARENT_OF_SNAPSHOT" "$FORCE_FULL" || true
     else
