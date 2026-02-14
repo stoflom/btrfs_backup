@@ -102,3 +102,112 @@ check_snapshot_complete() {
         return 2 # Exists but incomplete
     fi
 }
+
+# get_latest_common_parent SOURCE_SNAP_DIR BACKUP_DEST SNAP_NAME_PREFIX [TARGET_SNAP_PATH]
+# Finds the most recent snapshot that exists on both source and destination
+# and is complete on the destination.
+# If TARGET_SNAP_PATH is provided, only snapshots older than it are considered.
+get_latest_common_parent() {
+    local SOURCE_DIR=$1
+    local DEST_DIR=$2
+    local PREFIX=$3
+    local TARGET_PATH=${4:-""}
+
+    local ALL_SOURCE_SNAPS
+    ALL_SOURCE_SNAPS=$(find "$SOURCE_DIR" -maxdepth 1 -type d -name "${PREFIX}_[0-9]*" | sort -r)
+
+    local FOUND_TARGET=false
+    [ -z "$TARGET_PATH" ] && FOUND_TARGET=true
+
+    while read -r SNAP; do
+        [ -z "$SNAP" ] && continue
+        
+        if [ "$FOUND_TARGET" = false ]; then
+            if [ "$SNAP" = "$TARGET_PATH" ]; then
+                FOUND_TARGET=true
+            fi
+            continue
+        fi
+
+        local NAME=$(basename "$SNAP")
+        if check_snapshot_complete "$DEST_DIR/$NAME"; then
+            echo "$SNAP"
+            return 0
+        fi
+    done <<< "$ALL_SOURCE_SNAPS"
+
+    return 1
+}
+
+# show_snapshot_info SUBVOLUMES_ARRAY BACKUP_DEST
+show_snapshot_info() {
+    local SUBVOLS=("${@:1:$#-1}")
+    local DEST="${@: -1}"
+
+    printf "%-30s | %-10s | %-15s\n" "Snapshot Name" "Source" "Backup (Type)"
+    printf "%s\n" "----------------------------------------------------------------------------"
+
+    for SOURCE_SUBVOL in "${SUBVOLS[@]}"; do
+        get_snap_info "$SOURCE_SUBVOL"
+        echo "Subvolume: $SOURCE_SUBVOL"
+
+        # Get all unique snapshot names from both source and dest
+        local all_snaps
+        all_snaps=$( ( [ -d "$SNAP_DIR" ] && find "$SNAP_DIR" -maxdepth 1 -type d -name "${SNAP_NAME}_[0-9]*" -printf "%f\n" ; \
+                      [ -d "$DEST" ] && find "$DEST" -maxdepth 1 -type d -name "${SNAP_NAME}_[0-9]*" -printf "%f\n" ) | sort -u)
+
+        if [ -z "$all_snaps" ]; then
+            echo "  No snapshots found."
+            continue
+        fi
+
+        while read -r name; do
+            [ -z "$name" ] && continue
+            local src_status="MISSING"
+            local dst_status="MISSING"
+            local type_info=""
+
+            if [ -d "$SNAP_DIR/$name" ]; then
+                src_status="OK"
+            fi
+
+            if [ -d "$DEST/$name" ]; then
+                local subvol_info
+                subvol_info=$(btrfs subvolume show "$DEST/$name" 2>/dev/null)
+                
+                local check_status=0
+                if [ -z "$subvol_info" ]; then
+                    check_status=1
+                else
+                    local is_readonly=$(echo "$subvol_info" | grep -c 'Flags:.*readonly')
+                    local has_received_uuid=$(echo "$subvol_info" | grep -c -E 'Received UUID:.*[a-f0-9]{8}-')
+                    
+                    if [ "$is_readonly" -eq 1 ] && [ "$has_received_uuid" -eq 1 ]; then
+                        check_status=0
+                    else
+                        check_status=2
+                    fi
+                fi
+
+                if [ $check_status -eq 0 ]; then
+                    dst_status="OK"
+                    # Check for Parent UUID to determine if it was incremental
+                    local parent_uuid
+                    parent_uuid=$(echo "$subvol_info" | grep "Parent UUID:" | awk '{print $3}')
+                    if [ -n "$parent_uuid" ] && [ "$parent_uuid" != "-" ] && [[ ! "$parent_uuid" =~ ^0+$ ]]; then
+                        type_info="(Inc)"
+                    else
+                        type_info="(Full)"
+                    fi
+                elif [ $check_status -eq 2 ]; then
+                    dst_status="INCOMPLETE"
+                else
+                    dst_status="ERROR"
+                fi
+            fi
+
+            printf "  %-28s | %-10s | %-10s %-5s\n" "$name" "$src_status" "$dst_status" "$type_info"
+        done <<< "$all_snaps"
+        echo ""
+    done
+}
