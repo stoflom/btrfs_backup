@@ -46,6 +46,29 @@ KEEP=5
 
 ---
 
+## 💾 Installation
+
+You can install the scripts using the provided `Makefile`. By default, they are installed to `/root/.local/bin`.
+
+```bash
+# Default installation (/root/.local/bin)
+sudo make install
+
+# Install to a custom location
+sudo make install PREFIX=/usr/local
+# OR
+sudo make install BINDIR=/opt/bin
+```
+
+The `config.sh` file will be installed if it doesn't exist in the destination. If it already exists, it will be **retained** to preserve your settings.
+
+To uninstall:
+```bash
+sudo make uninstall
+```
+
+---
+
 ## 🚀 Usage
 
 All scripts must be run as **root**.
