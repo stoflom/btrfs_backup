@@ -79,6 +79,7 @@ sudo ./btrfs_snapshot_cleanup.sh [OPTIONS]
 ```
 
 - **No Arguments**: Cleans up snapshots both locally and on the backup destination.
+- `-k, --keep <num>`: **Override Keep Count**. Overrides the `KEEP` value from `config.sh` for this run.
 - `-p, --preserve`: **Preserve Backup**. Only delete snapshots from the source subvolume and **NOT** from the backup destination.
 - `-h, --help`: Display help message.
 
