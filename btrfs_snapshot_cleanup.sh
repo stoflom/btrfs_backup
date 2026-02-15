@@ -31,7 +31,8 @@ It retains $KEEP (see config.sh) snapshots for each subvolume.
 Options:
   -p, --preserve    Only delete snapshots from the source subvolume and NOT from the backup.
   -k, --keep <num>  Override the number of snapshots to keep (default: $KEEP from config.sh).
-EOF
+  -h, --help        Print this help info.
+  EOF
 }
 
 # --- Argument Parsing ---
