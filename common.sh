@@ -141,7 +141,7 @@ get_latest_common_parent() {
 
 # show_current_config
 show_current_config() {
-    echo "Current Configuration:"
+    echo "Current Configuration (config.sh):"
     echo "------------------------------------------------------"
     echo "SUBVOLUMES: (${SUBVOLUMES[*]})"
     echo "BACKUP_MOUNT: $BACKUP_MOUNT"
