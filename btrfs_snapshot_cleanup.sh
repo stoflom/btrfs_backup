@@ -22,20 +22,28 @@ fi
 # --- Help Function ---
 show_help() {
     cat <<EOF
-Usage: $(basename "$0") [-h|--help]
+Usage: $(basename "$0") [-h|--help] [-p|--preserve]
 
 This script cleans up old Btrfs snapshots (as configured in config.sh) 
 both locally and on the backup destination.
 It retains $KEEP (see config.sh) snapshots for each subvolume.
+
+Options:
+  -p, --preserve    Only delete snapshots from the source subvolume and NOT from the backup.
 EOF
 }
 
 # --- Argument Parsing ---
+PRESERVE_BACKUP=false
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -h|--help)
             show_help
             exit 0
+            ;;
+        -p|--preserve)
+            PRESERVE_BACKUP=true
+            shift
             ;;
         *)
             echo "Invalid option: $1" >&2
@@ -93,7 +101,9 @@ for SOURCE_SUBVOL in "${SUBVOLUMES[@]}"; do
     clean_snapshots_in_dir "$SNAP_DIR" "$SNAP_NAME" "$KEEP"
     
     # Clean backup snapshots
-    if [ -d "$BACKUP_DEST" ]; then
+    if [ "$PRESERVE_BACKUP" = "true" ]; then
+        echo "INFO: Preserve flag set. Skipping cleanup on backup destination: $BACKUP_DEST"
+    elif [ -d "$BACKUP_DEST" ]; then
         clean_snapshots_in_dir "$BACKUP_DEST" "$SNAP_NAME" "$KEEP"
     else
         echo "WARNING: Backup destination $BACKUP_DEST not available for cleanup." >&2

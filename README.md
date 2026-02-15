@@ -71,11 +71,15 @@ sudo ./btrfs_snapshot.sh
 ```
 
 ### 3. Cleanup (`btrfs_snapshot_cleanup.sh`)
-Removes old snapshots based on the `KEEP` variable in `config.sh`. It cleans up both local `.snapshots` directories and the `BACKUP_DEST`.
+Removes old snapshots based on the `KEEP` variable in `config.sh`. By default, it cleans up both local `.snapshots` directories and the `BACKUP_DEST`.
 
 ```bash
-sudo ./btrfs_snapshot_cleanup.sh
+sudo ./btrfs_snapshot_cleanup.sh [OPTIONS]
 ```
+
+- **No Arguments**: Cleans up snapshots both locally and on the backup destination.
+- `-p, --preserve`: **Preserve Backup**. Only delete snapshots from the source subvolume and **NOT** from the backup destination.
+- `-h, --help`: Display help message.
 
 ---
 
