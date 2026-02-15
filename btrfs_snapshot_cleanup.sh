@@ -81,58 +81,73 @@ clean_snapshots_for_subvol() {
     local LATEST_COMMON=""
     if [ -d "$SOURCE_DIR" ] && [ -d "$DEST_DIR" ]; then
         LATEST_COMMON=$(get_latest_common_parent "$SOURCE_DIR" "$DEST_DIR" "$PREFIX") || LATEST_COMMON=""
+        if [ -n "$LATEST_COMMON" ]; then
+            echo "INFO: Latest common parent identified: $(basename "$LATEST_COMMON")"
+        fi
     fi
 
     # 1. Clean Source
     if [ -d "$SOURCE_DIR" ]; then
-        mapfile -t src_snaps < <(find "$SOURCE_DIR" -maxdepth 1 -mindepth 1 -type d -name "${PREFIX}_[0-9]*" | sort)
+        mapfile -t src_snaps < <(find "$SOURCE_DIR" -maxdepth 1 -mindepth 1 -type d -name "${PREFIX}_[0-9]*" 2>/dev/null | sort || true)
         local src_total=${#src_snaps[@]}
+        local deleted=0
         
-        # We want to keep KEEP_COUNT snapshots, but we also want to protect LATEST_COMMON
-        if [ "$src_total" -gt "$KEEP_COUNT" ]; then
-            local to_delete_count=$((src_total - KEEP_COUNT))
-            local deleted=0
+        # Determine how many to keep (at least KEEP_COUNT)
+        # We also MUST keep LATEST_COMMON
+        for ((i=0; i<src_total; i++)); do
+            local s="${src_snaps[i]}"
+            local name=$(basename "$s")
+            local keep=false
             
-            for ((i=0; i<src_total && deleted < to_delete_count; i++)); do
-                local snap="${src_snaps[i]}"
-                
-                if [ "$snap" = "$LATEST_COMMON" ]; then
-                    echo "INFO: Protecting latest common parent on source: $snap"
-                    continue
-                fi
-                
-                echo "Deleting source snapshot: $snap"
-                if btrfs subvolume delete "$snap" >/dev/null; then
-                    ((deleted++))
+            # Keep if it's among the latest KEEP_COUNT
+            if [ "$i" -ge "$((src_total - KEEP_COUNT))" ]; then
+                keep=true
+            fi
+            
+            # ALWAYS keep the latest common parent
+            if [ "$s" = "$LATEST_COMMON" ]; then
+                keep=true
+            fi
+
+            if [ "$keep" = false ]; then
+                echo "Deleting source snapshot: $s"
+                if btrfs subvolume delete "$s" >/dev/null; then
+                    deleted=$((deleted + 1))
                 else
-                    echo "WARNING: Failed to delete $snap" >&2
+                    echo "WARNING: Failed to delete source snapshot $s" >&2
                 fi
-            done
-            echo "INFO: $SOURCE_DIR: Deleted $deleted snapshots, kept $((src_total - deleted))."
-        else
-            echo "INFO: $SOURCE_DIR: $src_total snapshots found; keeping all (count <= KEEP)."
-        fi
-    else
-        echo "INFO: Source directory $SOURCE_DIR does not exist. Skipping."
+            fi
+        done
+        echo "INFO: $SOURCE_DIR: Deleted $deleted snapshots."
     fi
 
     # 2. Clean Backup
     if [ "$PRESERVE_BACKUP" = "true" ]; then
         echo "INFO: Preserve flag set. Skipping backup cleanup."
     elif [ -d "$DEST_DIR" ]; then
-        mapfile -t dst_snaps < <(find "$DEST_DIR" -maxdepth 1 -mindepth 1 -type d -name "${PREFIX}_[0-9]*" | sort)
+        mapfile -t dst_snaps < <(find "$DEST_DIR" -maxdepth 1 -mindepth 1 -type d -name "${PREFIX}_[0-9]*" 2>/dev/null | sort || true)
         local dst_total=${#dst_snaps[@]}
+        local deleted=0
         
-        if [ "$dst_total" -gt "$KEEP_COUNT" ]; then
-            local to_delete=$((dst_total - KEEP_COUNT))
-            echo "INFO: $DEST_DIR: Found $dst_total snapshots. Deleting $to_delete oldest."
-            for ((i=0; i<to_delete; i++)); do
-                echo "Deleting backup snapshot: ${dst_snaps[i]}"
-                btrfs subvolume delete "${dst_snaps[i]}" >/dev/null || echo "WARNING: Failed to delete ${dst_snaps[i]}" >&2
-            done
-        else
-            echo "INFO: $DEST_DIR: $dst_total snapshots found; keeping all (count <= KEEP)."
-        fi
+        for ((i=0; i<dst_total; i++)); do
+            local d="${dst_snaps[i]}"
+            local keep=false
+            
+            # Keep if it's among the latest KEEP_COUNT
+            if [ "$i" -ge "$((dst_total - KEEP_COUNT))" ]; then
+                keep=true
+            fi
+
+            if [ "$keep" = false ]; then
+                echo "Deleting backup snapshot: $d"
+                if btrfs subvolume delete "$d" >/dev/null; then
+                    deleted=$((deleted + 1))
+                else
+                    echo "WARNING: Failed to delete backup snapshot $d" >&2
+                fi
+            fi
+        done
+        echo "INFO: $DEST_DIR: Deleted $deleted snapshots."
     else
         echo "WARNING: Backup destination $DEST_DIR not available for cleanup." >&2
     fi
