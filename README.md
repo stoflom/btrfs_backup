@@ -61,6 +61,7 @@ sudo ./btrfs_backup.sh [OPTIONS]
 - `-s, --send`: **Verification Mode**. Does not create new snapshots. Instead, it ensures the latest local snapshots are correctly transferred to the backup destination (useful for manual recovery or interrupted transfers).
 - `-f, --full`: **Force Full Send**. Forces a full send-receive of the snapshots, ignoring parent snapshots.
 - `-i, --info`: **Snapshot Info**. Displays a table showing the status (existence and completeness) of snapshots for each configured subvolume on both the source and the backup destination.
+- `-c, --config`: **Current Config**. Displays the current configuration variables as defined in `config.sh`.
 - `-h, --help`: Display help message.
 
 ### 2. Snapshot Only (`btrfs_snapshot.sh`)

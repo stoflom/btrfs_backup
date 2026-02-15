@@ -24,11 +24,12 @@ fi
 SEND_RECEIVE=false
 FORCE_FULL=false
 SHOW_INFO=false
+SHOW_CONFIG=false
 
 # --- Usage function ---
 usage() {
     cat <<EOF
-Usage: $(basename "$0") [-s|--send] [-f|--full] [-i|--info] [-h|--help]
+Usage: $(basename "$0") [-s|--send] [-f|--full] [-i|--info] [-c|--config] [-h|--help]
 
 Main orchestration script for Btrfs Incremental Backups. See configuration
 in config.sh.
@@ -40,6 +41,7 @@ Arguments:
       Does NOT create new snapshots.
   -f|--full: Forces a full send-receive (non-incremental).
   -i|--info: Display status of snapshots on both source and destination.
+  -c|--config: Display the current configuration from config.sh.
   -h|--help: Display the help message and exit.
 EOF
 }
@@ -61,6 +63,10 @@ while [[ $# -gt 0 ]]; do
             SHOW_INFO=true
             shift
             ;;
+        -c|--config)
+            SHOW_CONFIG=true
+            shift
+            ;;
         -h|--help)
             usage
             exit 0
@@ -73,13 +79,18 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# --- Main Execution ---
+
+if $SHOW_CONFIG; then
+    show_current_config
+    exit 0
+fi
+
 # Simple check
 if [ "$EUID" -ne 0 ]; then
     echo "ERROR: This script must be run as root." >&2
     exit 1
 fi
-
-# --- Main Execution ---
 
 if $SHOW_INFO; then
     show_snapshot_info "${SUBVOLUMES[@]}" "$BACKUP_DEST"

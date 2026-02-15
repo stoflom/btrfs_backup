@@ -139,6 +139,17 @@ get_latest_common_parent() {
     return 1
 }
 
+# show_current_config
+show_current_config() {
+    echo "Current Configuration:"
+    echo "------------------------------------------------------"
+    echo "SUBVOLUMES: (${SUBVOLUMES[*]})"
+    echo "BACKUP_MOUNT: $BACKUP_MOUNT"
+    echo "BACKUP_DEST: $BACKUP_DEST"
+    echo "KEEP: $KEEP"
+    echo "------------------------------------------------------"
+}
+
 # show_snapshot_info SUBVOLUMES_ARRAY BACKUP_DEST
 show_snapshot_info() {
     local SUBVOLS=("${@:1:$#-1}")
