@@ -77,7 +77,7 @@ All scripts must be run as **root**.
 This is the primary script. It creates new snapshots and sends them to the backup destination.
 
 ```bash
-sudo ./btrfs_backup.sh [OPTIONS]
+sudo btrfs_backup.sh [OPTIONS]
 ```
 
 - **No Arguments**: Creates new local snapshots and performs incremental sends to the backup destination.
@@ -91,14 +91,14 @@ sudo ./btrfs_backup.sh [OPTIONS]
 Creates local snapshots without performing a backup.
 
 ```bash
-sudo ./btrfs_snapshot.sh
+sudo btrfs_snapshot.sh
 ```
 
 ### 3. Cleanup (`btrfs_snapshot_cleanup.sh`)
 Removes old snapshots based on the `KEEP` variable in `config.sh`. By default, it cleans up both local `.snapshots` directories and the `BACKUP_DEST`.
 
 ```bash
-sudo ./btrfs_snapshot_cleanup.sh [OPTIONS]
+sudo btrfs_snapshot_cleanup.sh [OPTIONS]
 ```
 
 - **No Arguments**: Cleans up snapshots both locally and on the backup destination.
