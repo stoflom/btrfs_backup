@@ -3,7 +3,7 @@ set -e
 
 # Must be run with root privileges
 
-MOUNT_BASE="/home/stoflom/Pictures"
+MOUNT_BASE="/home/user/Pictures"
 
 # This utility does not assume the filesystem is mounted and identifies the
 #  filesystem by the UUID and not the device id (/dev/sdxy) since the device ids
