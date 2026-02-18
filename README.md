@@ -7,6 +7,7 @@ A collection of Bash scripts for automated Btrfs snapshot management and increme
 - **Automated Snapshots**: Easily create read-only snapshots of multiple subvolumes.
 - **Incremental Backups**: Send snapshots to a backup destination using `btrfs send/receive`.
 - **Intelligent Cleanup**: Retain a configurable number of the latest snapshots both locally and on the backup destination.
+- **Subvolume Mounting**: Utility to mount specific Btrfs subvolumes using UUIDs to ensure persistent mounting regardless of device naming changes.
 - **Verification Mode**: Re-send missing or incomplete snapshots to ensure backup integrity.
 - **System Logging**: All critical operations are logged to syslog for easy monitoring.
 
@@ -105,6 +106,15 @@ sudo btrfs_snapshot_cleanup.sh [OPTIONS]
 - `-k, --keep <num>`: **Override Keep Count**. Overrides the `KEEP` value from `config.sh` for this run.
 - `-p, --preserve`: **Preserve Backup**. Only delete snapshots from the source subvolume and **NOT** from the backup destination.
 - `-h, --help`: Display help message.
+
+### 4. Mount Subvolumes (`mount_btrfs_subvolumes.sh`)
+Mounts specific Btrfs subvolumes based on UUIDs. This is useful for setting up your environment before running backups or for general system organization.
+
+```bash
+sudo mount_btrfs_subvolumes.sh
+```
+
+**Note:** You must edit the `subvolumes` array and `MOUNT_BASE` variable directly in the script to match your system's UUIDs and desired mount points.
 
 ---
 

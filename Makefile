@@ -1,7 +1,7 @@
 PREFIX ?= /root/.local
 BINDIR ?= $(PREFIX)/bin
 
-SCRIPTS = btrfs_backup.sh btrfs_snapshot.sh btrfs_snapshot_cleanup.sh
+SCRIPTS = btrfs_backup.sh btrfs_snapshot.sh btrfs_snapshot_cleanup.sh mount_btrfs_subvolumes.sh
 LIBS = common.sh
 CONFIG = config.sh
 
