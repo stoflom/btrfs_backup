@@ -34,7 +34,8 @@ Usage: $(basename "$0") [-s|--send] [-f|--full] [-i|--info] [-c|--config] [-h|--
 Main orchestration script for Btrfs Incremental Backups. See configuration
 in config.sh.
 
-Must be run as root.
+Must be run as root. Without any arguments the script creates new snapshots and
+send them incrementally to the backup.
 
 Arguments:
   -s|--send: Enables a re-send and verification mode for the latest local snapshots.
