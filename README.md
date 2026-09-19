@@ -17,7 +17,7 @@ A collection of Bash scripts for automated Btrfs snapshot management, incrementa
 
 1.  **Btrfs Filesystem**: The source subvolumes and the backup destination must be on Btrfs.
 2.  **Snapshot Directories**: Each subvolume you wish to snapshot must have a `.snapshots` subvolume at its root.
-    
+
     *Example for `/` and `/home`:*
     ```bash
     sudo btrfs subvolume create /.snapshots
@@ -52,6 +52,7 @@ KEEP=5
 ## 💾 Installation
 
 You can install the scripts using the provided `Makefile`. By default, they are installed to `/root/.local/bin`.
+The `mount_btrfs_subvolumes.sh` script can be moved to `/usr/local/bin` to be available to sudo users.
 
 ```bash
 # Default installation (/root/.local/bin)
@@ -127,7 +128,7 @@ Both positional arguments are optional and can be used in combination with the `
 
 **Examples:**
 ```bash
-# Mount all subvolumes from the drive into ~/Pictures
+# Mount all subvolumes from MyDrive into ~/Pictures
 sudo ./mount_btrfs_subvolumes.sh /run/media/user/MyDrive /home/user/Pictures
 
 # Unmount them again
