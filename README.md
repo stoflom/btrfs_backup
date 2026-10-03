@@ -114,13 +114,13 @@ sudo btrfs_snapshot_cleanup.sh [OPTIONS]
 Mounts all subvolumes of an external btrfs drive into the `~/Pictures` tree (e.g. for darktable), and can unmount them again.
 
 ```bash
-sudo ./mount_btrfs_subvolumes.sh [-u|--unmount] [external_mountpoint] [mount_base]
+sudo ./mount_btrfs_subvolumes.sh [-u|--unmount] [external_mountpoint|device] [mount_base]
 ```
 
 | Argument | Description |
 |---|---|
 | `-u`, `--unmount` | Unmount the subvolumes instead of mounting them |
-| `external_mountpoint` | The mount point of the external btrfs drive. Defaults to `EXTERNAL_MOUNT` in the script (dummy `/run/media/<user>/<drive_name>`, replace with your own) |
+| `external_mountpoint`, `device` | The mount point of the external btrfs drive, or its block device (e.g. `/dev/sda1`). Defaults to `EXTERNAL_MOUNT` in the script (dummy `/run/media/<user>/<drive_name>`, replace with your own) |
 | `mount_base` | The directory under which the subvolume mount points are created. Defaults to `MOUNT_BASE` in the script (dummy `/home/<user>/Pictures`, replace with your own) |
 | `-h`, `--help` | Print usage information |
 
@@ -133,10 +133,14 @@ sudo ./mount_btrfs_subvolumes.sh /run/media/user/MyDrive /home/user/Pictures
 
 # Unmount them again
 sudo ./mount_btrfs_subvolumes.sh -u /run/media/user/MyDrive /home/user/Pictures
+
+# Use the block device directly instead of a mount point
+sudo ./mount_btrfs_subvolumes.sh /dev/sda1 /home/user/Pictures
 ```
 
 **How it works:**
 
+- If the first argument is a block device (e.g. `/dev/sda1`), it is used directly; otherwise it must be a mount point, and the block device behind it is resolved with `findmnt`.
 - The script lists all subvolumes of the external drive with `btrfs subvolume list -R` and mounts each one under `<mount_base>/<subvolume_name>`, where `<subvolume_name>` is the last component of the subvolume path (e.g. `LIVE/PICTURES/PicFiles/Trees` becomes `<mount_base>/Trees`).
 - The top-level subvolume (the drive root) is not mounted, only its sub-subvolumes.
 - Mount points that are already mounted are left as-is and reported.

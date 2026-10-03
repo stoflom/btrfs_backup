@@ -8,15 +8,15 @@ set -euo pipefail
 # (the drive root) is NOT mounted, only its sub-subvolumes.
 #
 # Usage:
-#   ./mount_btrfs_subvolumes.sh [-u|--unmount] [external_mountpoint] [mount_base]
+#   ./mount_btrfs_subvolumes.sh [-u|--unmount] [external_mountpoint|device] [mount_base]
 #
-# The external mountpoint defaults to EXTERNAL_MOUNT and the mountpoint
-# root to MOUNT_BASE below; both can be overridden with command line
-# arguments. Use -u/--unmount to unmount the subvolumes instead of
-# mounting them.
+# The first positional argument defaults to EXTERNAL_MOUNT; it can be a
+# mount point of the drive or a block device (e.g. /dev/sda1). The
+# mountpoint root defaults to MOUNT_BASE below. Use -u/--unmount to
+# unmount the subvolumes instead of mounting them.
 
 usage() {
-	echo "Usage: $0 [-u|--unmount] [external_mountpoint] [mount_base]"
+	echo "Usage: $0 [-u|--unmount] [external_mountpoint|device] [mount_base]"
 }
 
 # /home/<user> is a dummy directory - replace it with your own home directory
@@ -55,17 +55,23 @@ if [ ${#POSITIONAL[@]} -ge 2 ]; then
 	MOUNT_BASE="${POSITIONAL[1]}"
 fi
 
-if ! mountpoint -q "$EXTERNAL_MOUNT"; then
-	echo "ERROR: $EXTERNAL_MOUNT is not a mount point (is the drive connected?)" >&2
-	exit 1
-fi
+# The first positional argument may also be a block device (e.g. /dev/sda1)
+# instead of a mount point; then the subvolumes are listed directly from it.
+if [ -b "$EXTERNAL_MOUNT" ]; then
+	EXTERNAL_DEVICE="$EXTERNAL_MOUNT"
+else
+	if ! mountpoint -q "$EXTERNAL_MOUNT"; then
+		echo "ERROR: $EXTERNAL_MOUNT is neither a block device nor a mount point (is the drive connected?)" >&2
+		exit 1
+	fi
 
-# Resolve the block device behind the mount point (mount with subvol= needs
-# a block device, not a directory)
-EXTERNAL_DEVICE="$(findmnt -n -o SOURCE --mountpoint "$EXTERNAL_MOUNT")"
-if [ -z "$EXTERNAL_DEVICE" ]; then
-	echo "ERROR: could not find the block device for $EXTERNAL_MOUNT" >&2
-	exit 1
+	# Resolve the block device behind the mount point (mount with subvol=
+	# needs a block device, not a directory)
+	EXTERNAL_DEVICE="$(findmnt -n -o SOURCE --mountpoint "$EXTERNAL_MOUNT")"
+	if [ -z "$EXTERNAL_DEVICE" ]; then
+		echo "ERROR: could not find the block device for $EXTERNAL_MOUNT" >&2
+		exit 1
+	fi
 fi
 
 mount_subvolume() {
@@ -129,12 +135,12 @@ main() {
 		else
 			mount_subvolume "$subvol_path"
 		fi
-	done < <(btrfs subvolume list -R "$EXTERNAL_MOUNT")
+	done < <(btrfs subvolume list -R "$EXTERNAL_DEVICE")
 
 	if [ "$UNMOUNT" -eq 1 ]; then
-		echo "Done unmounting Btrfs subvolumes from $EXTERNAL_MOUNT"
+		echo "Done unmounting Btrfs subvolumes from $EXTERNAL_DEVICE"
 	else
-		echo "Done mounting Btrfs subvolumes from $EXTERNAL_MOUNT"
+		echo "Done mounting Btrfs subvolumes from $EXTERNAL_DEVICE"
 	fi
 }
 
